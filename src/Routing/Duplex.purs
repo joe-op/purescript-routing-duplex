@@ -10,6 +10,7 @@ module Routing.Duplex
   , end
   , segment
   , param
+  , param'
   , flag
   , hash
   , many1
@@ -167,6 +168,19 @@ segment = RouteDuplex Printer.put Parser.take
 -- |```
 param :: String -> RouteDuplex' String
 param p = RouteDuplex (Printer.param p) (Parser.param p)
+
+-- | `param' name` consumes or prints a query parameter with the given `name`.
+-- | Unlike `param`, the parameter is removed from the remaining state.
+-- | Parsing will fail if the parameter is not there.
+-- |
+-- |```purescript
+-- | parse (param' "search") "?search=keyword"                         == Right "keyword"
+-- | parse (param' "search") "/"                                       == Left (MissingParam "search")
+-- | parse (optional (param' "search")) "/"                            == Right Nothing
+-- | parse (many (param' "search")) "?search=keyword1&search=keyword2" == Right ["keyword1", "keyword2"]
+-- |```
+param' :: String -> RouteDuplex' String
+param' p = RouteDuplex (Printer.param p) (Parser.param' p)
 
 -- | Consumes or prints a query flag (i.e. parameter without value).
 -- | **Note:** that this combinator ignores the value of the parameter. It only cares about its presence/absence.

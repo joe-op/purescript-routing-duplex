@@ -8,6 +8,7 @@ module Routing.Duplex.Parser
   , prefix
   , take
   , param
+  , param'
   , flag
   , many1
   , many
@@ -41,7 +42,7 @@ import Data.Show.Generic (genericShow)
 import Data.String (Pattern(..), split)
 import Data.String.CodeUnits as String
 import Data.Traversable (traverse)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst, snd)
 import JSURI (decodeURIComponent)
 import Routing.Duplex.Types (RouteParams, RouteState)
 
@@ -215,6 +216,21 @@ param key = Chomp \state ->
   case lookup key state.params of
     Just a -> Success state a
     _ -> Fail $ MissingParam key
+
+param' :: String -> RouteParser String
+param' key = Chomp \state ->
+  let
+    { init, rest } = Array.span ((/=) key <<< fst) state.params
+  in
+    case NEA.fromArray rest of
+      Just nea ->
+        Success
+          ( state
+              { params = Array.union init (NEA.tail nea)
+              }
+          )
+          (snd (NEA.head nea))
+      Nothing -> Fail $ MissingParam key
 
 flag :: String -> RouteParser Boolean
 flag = default false <<< map (const true) <<< param

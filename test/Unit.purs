@@ -2,12 +2,13 @@ module Test.Unit (combinatorUnitTests) where
 
 import Prelude
 
+import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Routing.Duplex (RouteDuplex', as, boolean, default, flag, hash, int, many, many1, optional, param, params, parse, path, prefix, print, prop, record, rest, root, segment, string, suffix)
+import Routing.Duplex (RouteDuplex', as, boolean, default, flag, hash, int, many, many1, optional, param, param', params, parse, path, prefix, print, prop, record, rest, root, segment, string, suffix)
 import Routing.Duplex.Parser (RouteError(..), parsePath)
-import Test.Assert (assertEqual)
+import Test.Assert (assertEqual, assertTrue)
 import Type.Proxy (Proxy(..))
 
 combinatorUnitTests :: Effect Unit
@@ -48,6 +49,16 @@ combinatorUnitTests = do
   assertEqual { actual: parse (param "search") "?search=keyword", expected: Right "keyword" }
   assertEqual { actual: parse (param "search") "/", expected: Left (MissingParam "search") }
   assertEqual { actual: parse (optional (param "search")) "/", expected: Right Nothing }
+
+  -- param'
+  assertEqual { actual: parse (param' "search") "?search=keyword", expected: Right "keyword" }
+  assertEqual { actual: parse (param' "search") "/", expected: Left (MissingParam "search") }
+  assertEqual { actual: parse (optional (param' "search")) "/", expected: Right Nothing }
+  assertEqual { actual: parse (param' "search") "?search=keyword1&search=keyword2", expected: Right "keyword1" }
+  assertEqual { actual: parse (many (param' "search")) "?search=keyword1&search=keyword2", expected: Right [ "keyword1", "keyword2" ] }
+  assertEqual { actual: parse (many (param' "search")) "?search=keyword1&search=keyword2&other=othervalue&search=keyword3&search=keyword4", expected: Right [ "keyword1", "keyword2", "keyword3", "keyword4" ] }
+  assertEqual { actual: print (param' "search") "keyword", expected: "?search=keyword" }
+  assertTrue $ Array.elem (print (many (param' "search")) [ "keyword1", "keyword2" ]) [ "?search=keyword1&search=keyword2", "?search=keyword2&search=keyword1" ]
 
   -- hash
   assertEqual { actual: parse hash "abc#def", expected: Right "def" }
